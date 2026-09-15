@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Copy GitHub Issue URL as Markdown - Options</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14px;
+      margin: 16px;
+      min-width: 360px;
+    }
+    fieldset {
+      border: 1px solid #d1d9e0;
+      border-radius: 6px;
+      padding: 12px;
+    }
+    legend {
+      font-weight: 600;
+      padding: 0 4px;
+    }
+    label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 4px;
+      cursor: pointer;
+    }
+    code {
+      background: rgba(175, 184, 193, 0.2);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <fieldset>
+    <legend>Markdown format</legend>
+    <label>
+      <input type="radio" name="format" value="title-number">
+      <code>[issues title #123](url)</code>
+    </label>
+    <label>
+      <input type="radio" name="format" value="title">
+      <code>[issues title](url)</code>
+    </label>
+    <label>
+      <input type="radio" name="format" value="number">
+      <code>[#123](url)</code>
+    </label>
+  </fieldset>
+  <script src="options.js"></script>
+</body>
+</html>
