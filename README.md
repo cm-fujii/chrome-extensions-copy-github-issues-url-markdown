@@ -24,6 +24,18 @@ GitHub の Issue / Pull Request のタイトルと URL を Markdown リンク形
 
 タイトル内の `[` `]` `\` は自動でエスケープされる。
 
+### 種別ラベル（Issue / PR）
+
+リンクテキストだけでは Issue か PR か区別できないため、種別ラベルを含める設定を選択できる（デフォルト: 含めない）。
+
+| 設定 | 例 |
+| --- | --- |
+| None（デフォルト） | `[Fix login bug #123](url)` |
+| Prefix | `[Issue: Fix login bug #123](url)` / `[PR: Fix login bug #45](url)` |
+| Suffix | `[Fix login bug #123 (Issue)](url)` / `[Fix login bug #45 (PR)](url)` |
+
+種別は URL（`/issues/` か `/pull/` か）から判定される。
+
 ## インストール
 
 1. `chrome://extensions` を開く

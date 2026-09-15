@@ -2,7 +2,9 @@
 
 (() => {
   const BTN_CLASS = 'cgh-copy-btn';
+  // options/options.js の SETTINGS 各キーの先頭値と一致させること
   const DEFAULT_FORMAT = 'title-number';
+  const DEFAULT_TYPE_LABEL = 'none';
   const FEEDBACK_MS = 1500;
   const SCAN_THROTTLE_MS = 150;
   const BTN_LABEL = 'Copy as Markdown link';
@@ -55,23 +57,30 @@
     return title.replace(/[\\[\]]/g, '\\$&');
   }
 
-  function buildMarkdown(format, title, number, url) {
+  function buildMarkdown({ format, typeLabel }, { title, number, url, type }) {
     const t = escapeTitle(title.trim());
+    let text;
     switch (format) {
       case 'title':
-        return `[${t}](${url})`;
+        text = t;
+        break;
       case 'number':
-        return `[#${number}](${url})`;
+        text = `#${number}`;
+        break;
       default:
-        return `[${t} #${number}](${url})`;
+        text = `${t} #${number}`;
     }
+    const label = type === 'pr' ? 'PR' : 'Issue';
+    if (typeLabel === 'prefix') text = `${label}: ${text}`;
+    else if (typeLabel === 'suffix') text = `${text} (${label})`;
+    return `[${text}](${url})`;
   }
 
-  // href から Issue/PR の正規 URL と番号を取り出す（クエリ・ハッシュは捨てる）
+  // href から Issue/PR の正規 URL・番号・種別を取り出す（クエリ・ハッシュは捨てる）
   function parseIssueHref(href) {
-    const m = href.match(/^(https:\/\/github\.com\/[^/]+\/[^/]+\/(?:issues|pull)\/(\d+))(?:$|[/?#])/);
+    const m = href.match(/^(https:\/\/github\.com\/[^/]+\/[^/]+\/(issues|pull)\/(\d+))(?:$|[/?#])/);
     if (!m) return null;
-    return { url: m[1], number: m[2] };
+    return { url: m[1], number: m[3], type: m[2] === 'pull' ? 'pr' : 'issue' };
   }
 
   function fallbackCopy(text) {
@@ -123,14 +132,14 @@
         return;
       }
       // 拡張のリロード/更新でコンテキストが無効化されると chrome.* が throw する。
-      // その場合もデフォルト形式でコピー自体は成立させる
-      let format = DEFAULT_FORMAT;
+      // その場合もデフォルト設定でコピー自体は成立させる
+      let settings = { format: DEFAULT_FORMAT, typeLabel: DEFAULT_TYPE_LABEL };
       try {
-        ({ format } = await chrome.storage.sync.get({ format: DEFAULT_FORMAT }));
+        settings = await chrome.storage.sync.get(settings);
       } catch {
-        // fall back to DEFAULT_FORMAT
+        // fall back to defaults
       }
-      const markdown = buildMarkdown(format, data.title, data.number, data.url);
+      const markdown = buildMarkdown(settings, data);
       try {
         await navigator.clipboard.writeText(markdown);
         showFeedback(btn, 'check');
@@ -171,6 +180,7 @@
       title,
       number: m[4],
       url: `https://github.com/${m[1]}/${m[2]}/${m[3]}/${m[4]}`,
+      type: m[3] === 'pull' ? 'pr' : 'issue',
     };
   }
 
