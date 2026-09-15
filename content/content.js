@@ -25,6 +25,11 @@
       'h1[data-component="PH_Title"] a[href*="/issues/"], h1[data-component="PH_Title"] a[href*="/pull/"]',
       '[data-testid="side-panel-focus-target"] a[href*="/issues/"], [data-testid="side-panel-focus-target"] a[href*="/pull/"]',
     ],
+    // アンカーと同じタイトル行を指すコンテナ。タイトルと URL を必ず
+    // 同一 Issue から取るため、この中でだけタイトルを探す
+    projectPanelTitleScope:
+      'h1[data-component="PH_Title"], [data-testid="side-panel-title-content"], [data-testid="side-panel-focus-target"]',
+    projectPanelTitle: ['[data-testid="issue-title"]'],
   };
 
   // Octicons (MIT License) https://github.com/primer/octicons
@@ -195,22 +200,29 @@
   // Injector C: GitHub Projects のサイドパネル/フルスクリーン表示。
   // ブラウザの URL は Projects のままなので、パネル内タイトルの
   // アンカー href から Issue 本来の URL を取得する
+  function getProjectPanelData() {
+    const a = queryFirst(SELECTORS.projectPanelAnchor);
+    if (!a) return null;
+    const parsed = parseIssueHref(a.href);
+    if (!parsed) return null;
+    // パネルのタイトル行は「タイトルの bdi + #番号のアンカー」で構成され、
+    // アンカーのテキストは番号だけのことがある。タイトルはアンカーと同じ
+    // タイトル行の bdi から取り、無い/空のときのみアンカーテキストに頼る。
+    // 末尾の番号除去は、タイトル自体が別の「... #42」で終わるケースを
+    // 壊さないよう、href から取れた自分の番号と一致するときだけ行う
+    const scope = a.closest(SELECTORS.projectPanelTitleScope) ?? a.parentElement;
+    const titleEl = scope ? queryFirst(SELECTORS.projectPanelTitle, scope) : null;
+    const title =
+      (titleEl && titleEl.textContent.trim()) ||
+      a.textContent.trim().replace(new RegExp(`\\s*#${parsed.number}$`), '');
+    return title ? { title, ...parsed } : null;
+  }
+
   function injectProjectPanel() {
     if (!/^\/(orgs|users)\/[^/]+\/projects\/\d+/.test(location.pathname)) return;
     const anchor = queryFirst(SELECTORS.projectPanelAnchor);
     if (!anchor || hasButton(anchor) || !parseIssueHref(anchor.href)) return;
-    const btn = createButton(() => {
-      const a = queryFirst(SELECTORS.projectPanelAnchor);
-      if (!a) return null;
-      const parsed = parseIssueHref(a.href);
-      if (!parsed) return null;
-      // アンカーテキストが「タイトル #123」の形なら末尾の番号を落とす。
-      // タイトル自体が別の「... #42」で終わるケースを壊さないよう、
-      // href から取れた自分の番号と一致するときだけ除去する
-      const title = a.textContent.trim().replace(new RegExp(`\\s*#${parsed.number}$`), '');
-      return title ? { title, ...parsed } : null;
-    });
-    anchor.insertAdjacentElement('afterend', btn);
+    anchor.insertAdjacentElement('afterend', createButton(getProjectPanelData));
   }
 
   // 冪等なので何度走っても安全。React の再レンダーでボタンが消えても
